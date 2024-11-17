@@ -1,34 +1,29 @@
 const needle = require('needle');
 
-// Define the API URL for cat breeds
 const API_URL = 'https://api.thecatapi.com/v1/breeds/search';
 
-// Get the breed name from command-line arguments
-const breedName = process.argv[2];
-
-if (!breedName) {
-  console.error('Please provide a breed name as a command-line argument.');
-  process.exit(1);
-}
-
-// Fetch the data
-needle.get(API_URL, (error, response, body) => {
-  if (error) {
-    console.error('Error fetching data. Please check your internet connection or try again later.');
-    console.error('Error details:', error.message);
+// Function to fetch the breed description
+const fetchBreedDescription = function(breedName, callback) {
+  if (!breedName) {
+    callback('Please provide a breed name as an argument.', null);
     return;
   }
 
-  // Check if the body is an array
-  if (Array.isArray(body)) {
-    // Find the breed specified by the user
-    const breed = body.find(b => b.name.toLowerCase() === breedName.toLowerCase());
-    if (breed) {
-      console.log(`Description for ${breed.name}: ${breed.description}`);
-    } else {
-      console.log(`Breed "${breedName}" not found. Please check the name and try again.`);
+  // Fetch the breed data
+  needle.get(`${API_URL}?q=${breedName}`, (error, response, body) => {
+    if (error) {
+      callback(`Error fetching data: ${error.message}`, null);
+      return;
     }
-  } else {
-    console.error('Unexpected API response format:', body);
-  }
-});
+
+    // Check if the body contains data
+    if (Array.isArray(body) && body.length > 0) {
+      const breed = body[0]; // The API returns an array, take the first match
+      callback(null, breed.description);
+    } else {
+      callback(`Breed "${breedName}" not found.`, null);
+    }
+  });
+};
+
+module.exports = { fetchBreedDescription };
